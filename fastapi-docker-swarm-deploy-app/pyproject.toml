@@ -4,9 +4,13 @@ description = "Starter FastAPI application."
 version = "0.1.0"
 requires-python = ">=3.12,<3.13"
 dependencies = [
+  "aiosqlite>=0.22.1",
+  "asyncpg>=0.31.0",
   "fastapi[standard]>=0.135.3",
+  "fastcrud>=0.21.0",
   "pydantic-settings>=2.13.1",
   "python-json-logger>=4.1.0",
+  "sqlmodel>=0.0.38",
 ]
 
 [dependency-groups]
