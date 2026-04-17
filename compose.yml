@@ -1,0 +1,78 @@
+services:
+
+  web:
+    image: alexmahone/fastapi-dockerswarm-test-api:latest
+    ports:
+      - 8000:8000
+    networks:
+      - fastapi-app-network
+    secrets:
+      - source: db_password
+        target: /app/secrets/db_password
+    configs:
+      - source: api_config_v4
+        target: /app/configs/api.env
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+        failure_action: rollback
+        monitor: 30s
+        max_failure_ratio: 0.1
+
+  migrate:
+    image: alexmahone/fastapi-dockerswarm-test-api:latest
+    command: ["alembic", "-c", "src/alembic/alembic.ini", "upgrade", "head"]
+    networks:
+      - fastapi-app-network
+    secrets:
+      - source: db_password
+        target: /app/secrets/db_password
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+
+  db:
+    image: postgres:16.3-alpine
+    networks:
+      - fastapi-app-network
+    secrets:
+      - db_password
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt
+
+configs:
+  api_config_v4:
+    file: ./configs/api.env
+
+networks:
+  fastapi-app-network:
+    driver: overlay
+
+volumes:
+  pg-data:
