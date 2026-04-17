@@ -26,3 +26,6 @@ addopts = """
   --maxfail=1
 """
 filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.ty.src]
+exclude = ["src/alembic/versions"]
