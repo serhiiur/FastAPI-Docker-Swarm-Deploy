@@ -2,8 +2,10 @@
 __pycache__/
 .pytest_cache/
 .ruff_cache/
+.mypy_cache/
 *.pyc
 .env
 secrets/*.txt
 configs/
+assets/
 *.db
