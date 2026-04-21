@@ -1,222 +1,200 @@
 ## About
 
-Example of deploying a minimal FastAPI application to Docker Swarm cluster with multiple nodes.
+Minimal FastAPI application deployed on a multi-nodes Docker Swarm cluster.
 
 
-## Prerequisites
+## Navigation
 
-For provisioning virtual machines I'm going to use [limactl](https://github.com/lima-vm/lima). Make sure to follow the installation guide.
+- [About](#about)
+- [System Requirements](#system-requirements)
+- [Project Features](#project-features)
+- [Project Structure](#project-structure)
+- [Swarm Cluster Setup](#swarm-cluster-setup)
+- [Deployment](#deployment)
+- [Local Development Snippets](#local-development-snippets)
+- [Further Steps](#further-steps)
 
-The infrastructure that we're going to provision is:
-  - 1 Manager node
-  - 2 Worker nodes
-  - 1 Database node
 
-![]()
+## System Requirements
+- Python >=3.12,<3.13
+- Docker v1.12+ (for Docker Swarm Mode support)
+- (*Optional*) Virtualization Tool such as Lima/VirtualBox/VMWare etc.
 
 
-## Provisioning Virtual Machines
+## Project Features
+- FastAPI + Pydantic
+- Alembic for managing database migrations
+- JSON logging
+- Ruff for linting, Ty for type checking
+- Pytest for testing
+- Deployment to Docker Swarm cluster with multiple nodes
+- Configs and Secrets management using Docker capabilities
+- VMs provisioning with Lima
+- Basic CI/CD pipeline using Github Actions
 
-### Step 1. Create VM for Manager node:
+
+## Project Structure
 ```bash
-limactl create template:docker-rootful --name=manager1
+.
+├── configs
+│   ├── api.env         # Docker Config providing application configuration
+├── secrets
+│   ├── db_password.txt # Docker Secret to store the database password
+├── src
+│   ├── alembic         # Configuration for Alembic. Database migrations and files
+│   │   ├── ...
+│   ├── app
+│   │   ├── main.py     # Main FastAPI application entrypoint
+│   │   ├── core        # Core application providing shared resources such as settings, schemas, models etc.
+│   │   │   ├── ...
+│   │   └── users       # Application to manage users on the API level
+│   │       ├── ...
+│   └── tests           # Project tests
+│       ├── ...
+├── compose.yml         # Compose file to deploy the application to Docker Swarm cluster
+├── logging.config.json # Project logging config providing JSON handler
+├── create-vms.sh       # Custom script to provision virtual machine for Docker Swarm deployment
+├── Dockerfile          # Project Docker image builder
+├── pyproject.toml      # Project configuration and dependencies management
+└── uv.lock             # Locked project management file
+├── README.md
 ```
 
-![Limactl create VM](assets/images/1.png)
 
-In the interactive menu select *Open an editor to review or modify the current configuration* and specify **networks** attribute (for connectivity between all VMs):
-```yaml
-networks:
-- lima: user-v2
-```
+## Swarm Cluster Setup
 
-![VM networks](assets/images/2.png)
+Basic architecture for our Docker Swarm cluster is
+![Infrastructure](assets/images/infra.png)
 
-Once succeeded, start the VM like this:
+For provisioning cluster nodes, we use [Lima](https://github.com/lima-vm/lima), but you can use any other tool such as VirtualBox, VMWare etc.
+
+
+### Step 1. Provision VMs (nodes) for the Docker Swarm cluster:
+
+**Note**: skip this step if you don't use [Lima](https://github.com/lima-vm/lima).
+
 ```bash
-limactl start manager1
+sudo chmod +x ./create-vms.sh
+./create-vms.sh manager,worker1,worker2,db,cache
 ```
-![Started Manager VM](assets/images/3.png)
 
+### Step 2. Init Docker Swarm cluster:
 
-### Step 2. Create VMs for 2 Worker nodes:
 ```bash
-limactl create template:docker-rootful --name=worker1
-```
-
-![Limactl create VM](assets/images/4.png)
-
-In the interactive menu select *Open an editor to review or modify the current configuration* and specify **networks** attribute (for connectivity between all VMs):
-```yaml
-networks:
-- lima: user-v2
-```
-
-![VM networks](assets/images/2.png)
-
-Once succeeded, start the VM like this:
-```bash
-limactl start worker1
-```
-![Started Worker VM](assets/images/5.png)
-
-
-Identically create the second worker (**worker2**).
-
-
-### Step 3. Create 1 Database node:
-```bash
-limactl create template:docker-rootful --name=db
-```
-
-![Limactl create VM](assets/images/6.png)
-
-In the interactive menu select *Open an editor to review or modify the current configuration* and specify **networks** attribute (for connectivity between all VMs):
-```yaml
-networks:
-- lima: user-v2
-```
-
-![VM networks](assets/images/2.png)
-
-Once succeeded, start the VM like this:
-```bash
-limactl start db
-```
-![Started Database VM](assets/images/8.png)
-
-`
-Ultimately we've created 4 VMs (1 Manager, 2 Worker, 1 Database):
-![Limactl VMs](assets/images/9.png)
-
-
-### Step 4. Verify connectivity with the Manager:
-First of all obtain the IP address of the Manager node like this:
-```bash
-limactl shell manager1
-hostname -I
-```
-
-Next, enter the shell of each node (worker1, worker2 and db) and run `host lima-manager.internal` command to make sure that the received IP Address is the IP address of the Manager node:
-```bash
-limactl shell worker1
-host lima-manager1.internal
-```
-
-![VMs Manager IP Address](assets/images/10.png)
-
-Seems to be working. IP Address of the Manager Node is <ins>192.168.104.1</ins>.
-
-That's it. We've successfully created and connected 4 VMs and now we're ready to provision a Docker Swarm cluster.
-
-
-## Provisioning Docker Swarm Cluster
-
-After provision VMs, we 're ready to set up our Docker Swarm Cluster.
-
-### Step 1. Init Docker Swarm Cluster on the Manager node
-
-Enter shell of the manager node and initialize Docker Swarm cluster using
-```bash
+# connect to the Manager node and initialize the Docker Swarm cluster
+limactl shell manager
 docker swarm init
 ```
 
-**Note** that <ins>192.168.104.1</ins> is the IP address of the Manager node
-
-![Docker Swarm Init](assets/images/11.png)
-
-Copy the received token and use it to join the other nodes into the Docker Swarm cluster.
-
-
-### Step 2. Join the rest of the nodes to the Docker Swarm cluster.
-
-Enter the shell of each node (**worker1**, **worker2** and **db**) and join the Docker Swarm cluster, created on the manager:
-
+Copy the join token and address of the Manager node from the output into variables for further steps:
 ```bash
-docker swarm join --token SWMTKN-1-540nd15p42wffsdue43k79w021re0dgv769pmzud6aowdvfbb0-dqmfyt4yaiqtnakzgqgu88xif 192.168.104.1:2377
+TOKEN=<docker-token>
+MANAGER_ADDR=<manager-node-address>
 ```
 
-![Docker Swarm Join](assets/images/12.png)
+### Step 3. Join other nodes to the cluster:
 
-
-### Step 3. Verify all nodes joined the cluster
-
-Navigate to the manager node and inspect the Docker Swarm cluster using the following commands:
 ```bash
+# connect to the Worker1 node and join the cluster
+limactl shell worker1
+docker swarm join --token $TOKEN $MANAGER_ADDR
+
+# connect to the Worker2 node and join the cluster
+limactl shell worker2
+docker swarm join --token $TOKEN $MANAGER_ADDR
+
+# connect to the Database node and join the cluster
+limactl shell db
+db docker swarm join --token $TOKEN $MANAGER_ADDR
+
+# connect to the Cache node and join the cluster
+limactl shell cache
+docker swarm join --token $TOKEN $MANAGER_ADDR
+```
+
+Verify cluster nodes:
+
+```bash
+# connect to the Manager node and list nodes of the cluster
+limactl shell manager
 docker node ls
-docker info --format '{{json .}}' | jq '.Swarm'
 ```
 
-![Docker Swarm Nodes](assets/images/13.png)
+### Step 4. Tag nodes (for further deployment):
 
-
-### Step 3. Tag Nodes for further deployment
-
-Before deploying any service to the Docker Swarm cluster, label the nodes to ensure the services are deployed on the corresponding nodes.
-
-Navigate to the Manager node and label the nodes using node's hostname:
+The list of tags is:
+  - manager
+  - worker
+  - db
+  - cache
 
 ```bash
-docker node update --label-add TAG=manager manager1
+# connect to the Manager node
+limactl shell manager
+
+# tag nodes
+docker node update --label-add TAG=manager lima-manager
 docker node update --label-add TAG=worker lima-worker1
 docker node update --label-add TAG=worker lima-worker2
 docker node update --label-add TAG=db lima-db
+docker node update --label-add TAG=cache lima-cache
 ```
 
-![Docker Node Tags](assets/images/14.png)
-
-Additionally, you can display a node's tag like this:
-```bash
-docker node inspect lima-manager1 | jq '.[].Spec.Labels'
-```
-
-Once the nodes are labeled, we can deploy our services to a specific node. For example:
-```yaml
-deploy:
-  placement:
-    constraints:
-      - "node.labels.TAG == db"
-```
-
-That's it. Now we're ready to deploy our services to the Docker Swarm cluster.
-
-
-
-
-
-
-
-
-
-
-
-
-
+Now the application is ready to be deployed on the Docker Swarm cluster.
 
 
 
 ## Deployment
 
-Deploy the stack:
+To deploy the stack use the following command:
 ```bash
 docker stack deploy -c compose.yml fastapi-stack 
 ```
 
+Once the stack is deployed, open [http://localhost:8000/api/schema/docs](http://localhost:8000/api/schema/docs) in your browser
+and make sure the application in accessible.
 
-## Snippets
+Additionally you can use the commands below to inspect the cluster:
 ```bash
+
+```
+
+
+
+
+
+
+
+
+
+
+## Local Development Snippets
+
+You can run application locally without Docker. It's useful during development:
+
+```bash
+ export PYTHONPATH="src/:$PYTHONPATH"
+
 # generate database migrations
 uv run alembic -c src/alembic/alembic.ini revision --autogenerate -m "init commit"
 
 # apply database migrations
 uv run alembic -c src/alembic/alembic.ini upgrade head
+
+# run the application
+uv run uvicorn src.app.main:app --log-config logging.config.json\
+
+# run Ruff, Ty, Pytest
+uv run ruff check
+uv run ty check
+uv run pytest
 ```
 
 
+## Further steps
 
+- Add Admin UI for the FastAPI application
 
-### Docker Swarm Volumes
-https://stackoverflow.com/questions/47756029/how-does-docker-swarm-implement-volume-sharing
+- Add proxy service such as Nginx or Traefik
 
-
-- When using **volumes** in Docker Swarm mode, these volumes are local to each node by default. So they are not automatically shared across the cluster. Which is challenging to manage. For example, If a task is hosted on the first node then gets redeployed to another node, the data will be lost. To solve this problem Docker Swarm supports storage drivers.
+- 
