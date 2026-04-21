@@ -3,9 +3,10 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
+.github/
 *.pyc
 .env
 secrets/*.txt
-configs/
+configs/*.env
 assets/
 *.db
