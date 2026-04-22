@@ -25,7 +25,8 @@ ARG USER=fastapi \
 
 WORKDIR $WORKDIR
 
-RUN addgroup --system --gid $GROUP_GID $USER && \
+RUN apk add --no-cache curl  && \
+    addgroup --system --gid $GROUP_GID $USER && \
     adduser \
     --system \
     --disabled-password \
