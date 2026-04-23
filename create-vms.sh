@@ -17,7 +17,7 @@ for vm in "${vms[@]}"; do
     limactl create template:docker-rootful \
       --yes \
       --name "$vm" \
-      --set='.networks=[{"lima":"user-v2"}]'
+      --network lima:user-v2
     limactl start "$vm"
     echo "VM $vm is ready"
   ) &
