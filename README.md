@@ -16,6 +16,7 @@ For demonstration purposes we're going to provision virtual machines using [Lima
 - [Project Features](#project-features)
 - [Project Structure](#project-structure)
 - [Docker Swarm Cluster Setup](#docker-swarm-cluster-setup)
+- [Configuration](#configuration)
 - [Deployment](#deployment)
 - [Local Development](#local-development)
 - [Further Steps](#further-steps)
@@ -134,7 +135,26 @@ docker node update --label-add type=fastapi-stack --label-add tag=db      lima-d
 docker node update --label-add type=fastapi-stack --label-add tag=cache   lima-cache
 ```
 
-Now the application is ready to be deployed on the Docker Swarm cluster.
+
+## Configuration
+
+Before deploying the application you have to configure it first. We use Docker's [Secrets](https://docs.docker.com/engine/swarm/secrets/) and [Configs](https://docs.docker.com/engine/swarm/configs/) to manage configuration of the application in a Docker Swarm cluster.
+
+You can cerate main configuration file of the application:
+```bash
+cp ./configs/api.env.example cp ./configs/api.env
+```
+
+Once created, leave the default values or adjust ones to your environment.
+
+As of now there's only one secret called *db_password* for holding the database password.
+
+You can create it like this:
+```bash
+echo "postgres" > ./secrets/db_password.txt
+```
+
+Once the configuration files are set, the application is ready to be deployed.
 
 
 ## Deployment
