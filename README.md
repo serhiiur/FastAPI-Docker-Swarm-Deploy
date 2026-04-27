@@ -44,6 +44,8 @@ For demonstration purposes we're going to provision virtual machines using [Lima
 ## Project Structure
 ```bash
 .
+├── assets
+│   └── images          # Project images and diagrams for documentation
 ├── configs
 │   ├── api.env         # Docker Config providing application configuration
 ├── secrets
@@ -60,12 +62,13 @@ For demonstration purposes we're going to provision virtual machines using [Lima
 │   └── tests           # Project tests
 │       ├── ...
 ├── compose.yml         # Compose file to deploy the application to Docker Swarm cluster
-├── logging.config.json # Project logging config providing JSON handler
+├── logging.config.json # Logging configuration for the API
 ├── create-vms.sh       # Custom script to provision virtual machine for Docker Swarm deployment
 ├── Dockerfile          # Project Docker image builder
+├── Makefile            # Project Management commands
 ├── pyproject.toml      # Project configuration and dependencies management
 └── uv.lock             # Locked project management file
-├── README.md
+├── README.md           # Project documentation
 ```
 
 
@@ -141,7 +144,7 @@ docker node update --label-add type=fastapi-stack --label-add tag=cache   lima-c
 Before deploying the application make sure to configure it first. We use Docker [Secrets](https://docs.docker.com/engine/swarm/secrets/) and [Configs](https://docs.docker.com/engine/swarm/configs/) to manage configuration of the entire stack.
 
 
-You can generate the configuration file for the API like this:
+You can generate the main application config this:
 ```bash
 make config
 ```
