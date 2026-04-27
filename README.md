@@ -18,7 +18,7 @@ For demonstration purposes we're going to provision virtual machines using [Lima
 - [Docker Swarm Cluster Setup](#docker-swarm-cluster-setup)
 - [Configuration](#configuration)
 - [Deployment](#deployment)
-- [Local Development](#local-development)
+- [CLI Snippets](#cli-snippets)
 - [Further Steps](#further-steps)
 - [References](#references)
 
@@ -138,37 +138,38 @@ docker node update --label-add type=fastapi-stack --label-add tag=cache   lima-c
 
 ## Configuration
 
-Before deploying the application you have to configure it first. We use Docker's [Secrets](https://docs.docker.com/engine/swarm/secrets/) and [Configs](https://docs.docker.com/engine/swarm/configs/) to manage configuration of the application in a Docker Swarm cluster.
+Before deploying the application make sure to configure it first. We use Docker [Secrets](https://docs.docker.com/engine/swarm/secrets/) and [Configs](https://docs.docker.com/engine/swarm/configs/) to manage configuration of the entire stack.
 
-You can cerate main configuration file of the application:
+
+You can generate the configuration file for the API like this:
 ```bash
-cp ./configs/api.env.example cp ./configs/api.env
+make config
 ```
 
-Once created, leave the default values or adjust ones to your environment.
+It will create the file <ins>./configs/api.env</ins> with some default values. You can adjust them to your environment.
 
-As of now there's only one secret called *db_password* for holding the database password.
+Moving on to secrets, each secret such as passwords, tokens, etc. is stored in a separate file inside <ins>./secrets</ins> directory. For instance, the database password is stored in <ins>./secrets/db_password.txt</ins> file. The full list of secrets is listed in the [compose.yml](compose.yml) file.
 
-You can create it like this:
+
+**Note**: it's recommended to put a secret into the corresponding file by hand, but during development you could do something like this:  
+
 ```bash
 echo "postgres" > ./secrets/db_password.txt
 ```
-
-Once the configuration files are set, the application is ready to be deployed.
 
 
 ## Deployment
 
 Deploy the application stack on the Manager node:
 ```bash
-limactl shell manager docker stack deploy -c compose.yml fastapi-stack 
+limactl shell manager make stack-deploy
 ```
 
-Once the stack is deployed, you can verify the services status like this:
+Once the stack is deployed, you can check its status:
 ```bash
-limactl shell manager docker stack services fastapi-stack
+limactl shell manager stack-status
 # or
-limactl shell manager docker stack ps fastapi-stack 
+limactl shell manager stack-services
 ```
 
 If everything's ok, you can ping the API health like this:
@@ -176,7 +177,11 @@ If everything's ok, you can ping the API health like this:
 limactl shell manager curl http://127.0.0.1:8000/api/health
 ```
 
-In order to make the application available on the host machine, you need to create a tunnel for the Manager node:
+### Proxy the API to Host:
+
+During development you might want to make the application accessible from the host machine. Follow the steps below to achieve this:
+
+**Step 1**. Create a tunnel for the Manager node:
 ```bash
 limactl tunnel manager
 ```
@@ -187,12 +192,12 @@ Set `ALL_PROXY=socks5h://127.0.0.1:<PORT>`, etc.
 The instance can be connected from the host as <http://lima-default.internal> via a web browser.
 ```
 
-Now you can access the application from your host machine like this:
+**Step 2**. Access the application from your host machine:
 ```bash
 curl --proxy socks5h://127.0.0.1:<PORT> http://lima-manager.internal:8000/api/health
 ```
 
-In order to open the application in the browser you have to configure SOCKS5 proxy at 127.0.0.1:<PORT>, then navigate to http://lima-manager.internal:8000/api/health.
+**Step 3** (optional). In order to open the application in the browser you have to configure SOCKS5 proxy at 127.0.0.1:<PORT>, then navigate to http://lima-manager.internal:8000/api/health.
 
 The image below shows SOCKS5 proxy configuration for Firefox.
 
@@ -206,26 +211,28 @@ You can also access the Portainer's UI from the browser of your host machine at 
 
 
 
-## Local Development
+## CLI Snippets
 
-You can run application locally without Docker:
+The commands below might be helpful during local development:
 
 ```bash
-export PYTHONPATH="src/:$PYTHONPATH"
+# list the available project commands
+make help
 
-# generate database migrations
-uv run alembic -c src/alembic/alembic.ini revision --autogenerate -m "init commit"
+# generate new database migrations file
+make migrations m="<some-message>"
 
-# apply database migrations
-uv run alembic -c src/alembic/alembic.ini upgrade head
+# apply the database migrations
+make migrate
 
-# run the API
-uv run uvicorn src.app.main:app --log-config logging.config.json
+# run checks such as Ruff for linting, Ty for type checking, Pytest for testing
+make check
 
-# run Ruff, Ty, Pytest
-uv run ruff check
-uv run ty check
-uv run pytest
+# run the API locally
+make run RELOAD=1
+
+# clean internal cached files and directories
+make clean
 ```
 
 
@@ -237,9 +244,7 @@ uv run pytest
 
 - Add basic CI/CD pipeline using Github Actions.
 
-- Add integration with *Makefile* to manage the project.
-
-- 
+- ...
 
 
 
