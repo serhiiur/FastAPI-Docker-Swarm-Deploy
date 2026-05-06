@@ -15,8 +15,10 @@ dependencies = [
 ]
 
 [dependency-groups]
+dev = ["pre-commit>=4.6.0"]
 lint = ["ruff>=0.15.9", "ty>=0.0.29"]
 test = ["asgi-lifespan>=2.1.0", "faker>=40.13.0", "pytest>=9.0.2"]
+
 
 [tool.pytest.ini_options]
 python_files = ["test_*.py"]
@@ -29,5 +31,34 @@ addopts = """
 """
 filterwarnings = ["ignore::DeprecationWarning"]
 
+
 [tool.ty.src]
 exclude = ["src/alembic/versions"]
+
+
+[tool.ruff]
+target-version = "py312"
+exclude = [".venv"]
+lint.extend-select = ["ALL"]
+lint.ignore = [
+  "D100",  # undocumented-public-module
+  "D104",  # undocumented-public-package
+  "UP040", # non-pep695-type-alias
+]
+
+[tool.ruff.lint.per-file-ignores]
+"src/tests/*" = [
+  "D102",   # undocumented-public-method
+  "D103",   # undocumented-public-function
+  "S101",   # usage-of-assert-statement
+  "INP001", # implicit-namespace-package
+]
+# alembic generates code automatically, so a lot of rules are ignored ...
+"src/alembic/*" = [
+  "D400",   # missing-trailing-period
+  "D415",   # missing-terminal-punctuation
+  "ERA001", # commented-out-code
+  "INP001", # implicit-namespace-package
+  "UP007",  # non-pep604-annotation-union
+  "UP035",  # deprecated-import
+]
