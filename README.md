@@ -35,6 +35,7 @@ For demonstration purposes we're going to provision virtual machines using [Lima
 - JSON logging
 - Ruff for linting, Ty for type checking
 - Pytest for testing
+- Pre-commit hooks to perform actions (formatting, testing etc.) before pushing code to the repository
 - Deploy to Docker Swarm multi-node cluster
 - Configs and Secrets management using Docker capabilities
 - VMs provisioning with Lima
@@ -45,30 +46,31 @@ For demonstration purposes we're going to provision virtual machines using [Lima
 ```bash
 .
 ├── assets
-│   └── images          # Project images and diagrams for documentation
+│   └── images              # Project images and diagrams for documentation
 ├── configs
-│   ├── api.env         # Docker Config providing application configuration
+│   ├── api.env             # Docker Config providing application configuration
 ├── secrets
-│   ├── db_password.txt # Docker Secret to store the database password
+│   ├── db_password.txt     # Docker Secret to store the database password
 ├── src
-│   ├── alembic         # Configuration for Alembic. Database migrations and files
+│   ├── alembic             # Configuration for Alembic. Database migrations and files
 │   │   ├── ...
 │   ├── app
-│   │   ├── main.py     # Main FastAPI application entrypoint
-│   │   ├── core        # Core application providing shared resources such as settings, schemas, models etc.
+│   │   ├── main.py         # Main FastAPI application entrypoint
+│   │   ├── core            # Core application providing shared resources such as settings, schemas, models etc.
 │   │   │   ├── ...
-│   │   └── users       # Application to manage users on the API level
+│   │   └── users           # Application to manage users on the API level
 │   │       ├── ...
-│   └── tests           # Project tests
+│   └── tests               # Project tests
 │       ├── ...
-├── compose.yml         # Compose file to deploy the application to Docker Swarm cluster
-├── logging.config.json # Logging configuration for the API
-├── create-vms.sh       # Custom script to provision virtual machine for Docker Swarm deployment
-├── Dockerfile          # Project Docker image builder
-├── Makefile            # Project Management commands
-├── pyproject.toml      # Project configuration and dependencies management
-└── uv.lock             # Locked project management file
-├── README.md           # Project documentation
+├── compose.yml             # Compose file to deploy the application to Docker Swarm cluster
+├── logging.config.json     # Logging configuration for the API
+├── lima.sh                 # Custom script to provision virtual machine for Docker Swarm deployment
+├── Dockerfile              # Project Docker image builder
+├── Makefile                # Project Management commands
+├── .pre-commit-config.yaml # Pre commit hooks
+├── pyproject.toml          # Project configuration and dependencies management
+└── uv.lock                 # Locked project management file
+├── README.md               # Project documentation
 ```
 
 
@@ -86,8 +88,8 @@ Basic architecture for our Docker Swarm cluster is
 **Note**: skip this step if you don't use Lima for provisioning VMs.
 
 ```bash
-sudo chmod +x ./create-vms.sh
-./create-vms.sh manager,worker1,worker2,db,cache
+sudo chmod +x ./lima.sh
+./lima.sh manager,worker1,worker2,db,cache
 ```
 
 ### Step 2. Init Docker Swarm cluster:
@@ -154,7 +156,7 @@ It will create the file <ins>./configs/api.env</ins> with some default values. Y
 Moving on to secrets, each secret such as passwords, tokens, etc. is stored in a separate file inside <ins>./secrets</ins> directory. For instance, the database password is stored in <ins>./secrets/db_password.txt</ins> file. The full list of secrets is listed in the [compose.yml](compose.yml) file.
 
 
-**Note**: it's recommended to put a secret into the corresponding file by hand, but during development you could do something like this:  
+**Note**: it's recommended to put a secret into the corresponding file by hand, but during development you could do something like this:
 
 ```bash
 echo "postgres" > ./secrets/db_password.txt
@@ -208,7 +210,7 @@ The image below shows SOCKS5 proxy configuration for Firefox.
   <img src="assets/images/firefox_socks5_network_configuration.png" width=400>
 </p>
 
-Note that 40333 is the port that was provided by `limactl tunnel` command.  
+Note that 40333 is the port that was provided by `limactl tunnel` command.
 
 You can also access the Portainer's UI from the browser of your host machine at [https://lima-manager.internal:9443](https://lima-manager.internal:9443) to monitor your Docker Swarm cluster.
 
