@@ -16,12 +16,16 @@ services:
         condition: on-failure
         delay: 5s
         max_attempts: 3
-        window: 120s # how long to wait before resetting the failure count
+        window: 120s # to wait after a restart to determine whether it was successful
       update_config:
         parallelism: 1
         delay: 10s
         order: start-first
         failure_action: rollback
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
       placement:
         constraints:
           - "node.labels.tag == worker"
