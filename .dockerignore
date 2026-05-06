@@ -11,3 +11,4 @@ configs/*.env
 assets/
 *.db
 Makefile
+.pre-commit-config.yaml
