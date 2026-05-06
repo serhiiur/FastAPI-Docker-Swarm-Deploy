@@ -13,6 +13,7 @@ STACK_NAME ?= fastapi-stack
 				type-check \
 				test \
 				check \
+				pre-commit \
 				stack-deploy \
 				stack-status \
 				stack-services \
@@ -44,7 +45,7 @@ migrate: ## Apply database migrations to head
 	uv run alembic -c src/alembic/alembic.ini upgrade head
 
 run: ## Start the uvicorn development server (usage: make run RELOAD=1)
-	uv run uvicorn src.app.main:app $(if $(RELOAD),--reload)
+	uv run uvicorn src.app.main:app --log-config logging.config.json $(if $(RELOAD),--reload)
 
 lint: ## Run Ruff linter
 	uv run ruff check
@@ -55,7 +56,11 @@ type-check: ## Run Ty type checker
 test: ## Run Pytest test suite
 	uv run pytest
 
-check: lint type-check test ## Run linter, type checker, and test suite
+## Run linter, type checker, and test suite
+check: lint type-check test
+	
+pre-commit: ## Run pre-commit hooks
+	uv run pre-commit run -a
 
 stack-deploy: ## Deploy the stack to the Docker Swarm cluster (usage: make stack-deploy STACK_NAME=my-stack)
 	docker stack deploy -c compose.yml $(STACK_NAME)
@@ -68,4 +73,3 @@ stack-services: ## Display services of the stack in the Docker Swarm cluster
 
 stack-teardown: ## Remove the stack from the Docker Swarm cluster
 	docker stack rm $(STACK_NAME)
-
