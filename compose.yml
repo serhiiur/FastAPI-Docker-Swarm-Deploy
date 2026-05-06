@@ -1,7 +1,7 @@
 services:
 
   web:
-    image: alexmahone/fastapi-dockerswarm-test-api:latest
+    image: alexmahone/fastapi-dockerswarm-test-api:${IMAGE_TAG:-latest}
     ports:
       - "8000:8000"
     secrets:
@@ -62,7 +62,7 @@ services:
       POSTGRES_DB: postgres
       POSTGRES_PASSWORD_FILE: /run/secrets/db_password
     volumes:
-      - pg-data:/var/lib/postgresql/data
+      - pg_data:/var/lib/postgresql/data
     deploy:
       replicas: 1
       restart_policy:
@@ -110,5 +110,5 @@ configs:
     file: ./configs/api.env
 
 volumes:
-  pg-data:
+  pg_data:
   portainer_data:
