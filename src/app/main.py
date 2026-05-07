@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from app.core.db import engine
 from app.core.errors import error_handlers
 from app.core.routes import router as core_router
 from app.core.settings import settings
@@ -15,6 +16,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     # startup actions
     yield
     # shutdown actions
+    await engine.dispose()
 
 
 app = FastAPI(
