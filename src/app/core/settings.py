@@ -1,8 +1,10 @@
+import os
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from .constants import AppEnvironment
 
 
 class BaseAbstractSettings(BaseSettings):
@@ -36,7 +38,7 @@ class FastApiSettings(BaseAbstractSettings):
 class DatabaseSettings(BaseAbstractSettings):
     """Settings for database connection."""
 
-    model_config = SettingsConfigDict(env_prefix="db_")
+    model_config = SettingsConfigDict(env_prefix="db_", arbitrary_types_allowed=True)
 
     password: str = ""
     url: str = (
@@ -54,26 +56,46 @@ class LoggingSettings(BaseAbstractSettings):
     name: str = "uvicorn.error"
 
 
-class Settings(BaseAbstractSettings):
-    """Application settings."""
+class DefaultSettings(BaseAbstractSettings):
+    """Default application settings."""
 
     fastapi: FastApiSettings = FastApiSettings()
     db: DatabaseSettings = DatabaseSettings()
     logger: LoggingSettings = LoggingSettings()
 
 
-class TestSettings(BaseAbstractSettings):
-    """Settings to be used during testing."""
+class TestSettings(DefaultSettings):
+    """Settings for testing environment of the application."""
 
     fastapi: FastApiSettings = FastApiSettings(debug=True)
     logger: LoggingSettings = LoggingSettings(name="test")
-    db: DatabaseSettings = DatabaseSettings()
+
+
+class DevelopmentSettings(DefaultSettings):
+    """Settings for development environment of the application."""
+
+    fastapi: FastApiSettings = FastApiSettings(debug=True)
+
+
+class ProductionSettings(DefaultSettings):
+    """Settings for production environment of the application."""
+
+    fastapi: FastApiSettings = FastApiSettings(debug=False)
 
 
 @lru_cache
-def get_settings() -> Settings:
+def get_settings() -> DefaultSettings:
     """Return cached project settings."""
-    return Settings()
+    environment = os.getenv("APP_ENVIRONMENT", AppEnvironment.PRODUCTION)
+    match environment:
+        case AppEnvironment.PRODUCTION:
+            return ProductionSettings()
+        case AppEnvironment.TEST:
+            return TestSettings()
+        case AppEnvironment.DEVELOPMENT:
+            return DevelopmentSettings()
+        case _:
+            return DefaultSettings()
 
 
 settings = get_settings()
