@@ -1,7 +1,7 @@
 services:
 
   web:
-    image: alexmahone/fastapi-dockerswarm-test-api:${IMAGE_TAG:-latest}
+    image: ${WEB_IMAGE}:${WEB_IMAGE_TAG:-latest}
     ports:
       - "8000:8000"
     secrets:
@@ -10,13 +10,16 @@ services:
     configs:
       - source: api_config
         target: /app/configs/api.env
+    environment:
+      - DB_NAME: ${POSTGRES_DB:-postgres}
+      - DB_USER: ${POSTGRES_USER:-postgres}
     deploy:
-      replicas: 2
+      replicas: ${WEB_REPLICAS:-2}
       restart_policy:
         condition: on-failure
         delay: 5s
         max_attempts: 3
-        window: 120s # to wait after a restart to determine whether it was successful
+        window: 120s # wait after a restart to determine whether it was successful
       update_config:
         parallelism: 1
         delay: 10s
@@ -24,8 +27,8 @@ services:
         failure_action: rollback
       resources:
         limits:
-          cpus: '2.0'
-          memory: 1G
+          cpus: ${WEB_CPU_LIMIT:-2.0}
+          memory: ${WEB_RAM_LIMIT:-2G}
       placement:
         constraints:
           - "node.labels.tag == worker"
@@ -42,7 +45,7 @@ services:
       retries: 5
 
   migrate:
-    image: alexmahone/fastapi-dockerswarm-test-api:latest
+    image: ${WEB_IMAGE}:${WEB_IMAGE_TAG:-latest}
     command: ["alembic", "-c", "src/alembic/alembic.ini", "upgrade", "head"]
     secrets:
       - source: db_password
@@ -62,8 +65,8 @@ services:
     secrets:
       - db_password
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_DB: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
       POSTGRES_PASSWORD_FILE: /run/secrets/db_password
     volumes:
       - pg_data:/var/lib/postgresql/data
@@ -71,6 +74,10 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
+      resources:
+        limits:
+          cpus: ${POSTGRES_CPU_LIMIT:-2.0}
+          memory: ${POSTGRES_RAM_LIMIT:-4G}
       placement:
         constraints:
           - "node.labels.tag == db"
