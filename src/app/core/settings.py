@@ -1,7 +1,9 @@
 import os
 from functools import lru_cache
 from pathlib import Path
+from typing import Self
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from .constants import AppEnvironment
@@ -38,14 +40,21 @@ class FastApiSettings(BaseAbstractSettings):
 class DatabaseSettings(BaseAbstractSettings):
     """Settings for database connection."""
 
-    model_config = SettingsConfigDict(env_prefix="db_", arbitrary_types_allowed=True)
+    model_config = SettingsConfigDict(env_prefix="db_")
 
+    name: str = ""
+    user: str = ""
     password: str = ""
-    url: str = (
-        "sqlite+aiosqlite:///local.db"
-        if not password
-        else f"postgresql+asyncpg://postgres:{password}@db:5432/postgres"
-    )
+    url: str = "sqlite+aiosqlite:///local.db"
+
+    @model_validator(mode="after")
+    def set_url(self) -> Self:
+        """Set the database URL after validating the provided database parameters."""
+        if all([self.name, self.user, self.password]):
+            self.url = (
+                f"postgresql+asyncpg://{self.user}:{self.password}@db:5432/{self.name}"
+            )
+        return self
 
 
 class LoggingSettings(BaseAbstractSettings):
