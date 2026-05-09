@@ -58,7 +58,7 @@ test: ## Run Pytest test suite
 
 ## Run linter, type checker, and test suite
 check: lint type-check test
-	
+
 pre-commit: ## Run pre-commit hooks
 	uv run pre-commit run -a
 
