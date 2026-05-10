@@ -5,7 +5,8 @@ STACK_NAME ?= fastapi-stack
 .PHONY: help \
 				install \
 				clean \
-				config \
+				app-config \
+				compose-config \
 				migrations \
 				migrate \
 				run \
@@ -32,8 +33,11 @@ clean: ## Remove Python and tool cache directories
 	find . -type f \( -name "*.pyc" -o -name "*.pyo" \) -delete
 	rm -rf .mypy_cache .ruff_cache .pytest_cache
 
-config: ## Copy api.env.example to api.env (skips if api.env already exists)
-	cp -n ./configs/api.env.example ./configs/api.env
+app-config: ## Copy api.env.example to api.env (skips if file already exists)
+	cp ./configs/api.env.example ./configs/api.env --update=none
+
+compose-config: ## Copy .env.example to .env (skips if file already exists)
+	cp ./.env.example ./.env --update=none
 
 migrations: ## Generate a new migration (usage: make migrations m="message")
 ifeq ($(m),)
