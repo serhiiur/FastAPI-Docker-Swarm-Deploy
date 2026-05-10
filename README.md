@@ -67,6 +67,7 @@ For demonstration purposes we're going to provision virtual machines using [Lima
 ├── lima.sh                 # Custom script to provision virtual machine for Docker Swarm deployment
 ├── Dockerfile              # Project Docker image builder
 ├── Makefile                # Project Management commands
+├── .env                    # File to dynamically configure compose services
 ├── .pre-commit-config.yaml # Pre commit hooks
 ├── pyproject.toml          # Project configuration and dependencies management
 └── uv.lock                 # Locked project management file
@@ -143,24 +144,40 @@ docker node update --label-add type=fastapi-stack --label-add tag=cache   lima-c
 
 ## Configuration
 
-Before deploying the application make sure to configure it first. We use Docker [Secrets](https://docs.docker.com/engine/swarm/secrets/) and [Configs](https://docs.docker.com/engine/swarm/configs/) to manage configuration of the entire stack.
+Configuration of the entire stack relies on:
+  - environment variables - for configuring Docker Swarm services;
+  - Docker [Secrets](https://docs.docker.com/engine/swarm/secrets/) - for managing sensitive information such as passwords;
+  - Docker [Configs](https://docs.docker.com/engine/swarm/configs/) - for managing regular configuration of the application.
 
-
-You can generate the main application config this:
+**Step 1**: configure Docker Swarm services ([compose.yml](compose.yml)) via <ins>.env</ins> file. Run the following command to generate one:
 ```bash
-make config
+make compose-config
 ```
 
-It will create the file <ins>./configs/api.env</ins> with some default values. You can adjust them to your environment.
+It will generate the <ins>.env</ins> file in the root project directory. Adjust the parameters to your environment or project requirements.
 
-Moving on to secrets, each secret such as passwords, tokens, etc. is stored in a separate file inside <ins>./secrets</ins> directory. For instance, the database password is stored in <ins>./secrets/db_password.txt</ins> file. The full list of secrets is listed in the [compose.yml](compose.yml) file.
+**Step 2**: set *Secrets* for storing sensitive information inside Docker Swarm services.
 
+According to the [Secrets](https://docs.docker.com/engine/swarm/secrets/) management in Docker, each parameter should be stored in a separate file inside [./secrets/](./secrets/) directory, and then referenced in the [compose.yml](compose.yml) file. There's only only **Secret** in the entire stack that stores the database password.
 
-**Note**: it's recommended to put a secret into the corresponding file by hand, but during development you could do something like this:
-
+It can be created like this:
 ```bash
 echo "postgres" > ./secrets/db_password.txt
 ```
+
+**Note**: it's recommended to create the <ins>./secrets/db_password.txt</ins> file and set the password manually.
+
+
+**Step 3**: set **Config** for storing regular configuration of the web application. 
+
+Similarly to [Secrets](https://docs.docker.com/engine/swarm/secrets/), [Configs](https://docs.docker.com/engine/swarm/secrets/) should be stored in a separate file inside [./configs/](./configs/) directory. There's an application config template you can you to configure the application. Use the command below to generate the application configuration file:
+```bash
+make app-config
+```
+
+It will generate <ins>./configs/api.env</ins> file. Adjust the parameters to your own requirements or leave the default values.
+
+Once all the configuration is set, the stack is ready to be deployed.
 
 
 ## Deployment
