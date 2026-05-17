@@ -49,7 +49,8 @@ For demonstration purposes we're going to provision virtual machines using [Lima
 │   └── images                  # Project images and diagrams for documentation
 ├── configs
 │   ├── api.env                 # Docker Config providing application configuration
-│   ├── api.logging.config.json # Logging configuration file for the API
+│   ├── uvicorn.env             # Configuration for Uvicorn (serves the application)
+│   ├── api.logging.config.json # Logging configuration file for the application
 ├── secrets
 │   ├── db_password.txt         # Docker Secret to store the database password
 ├── src
