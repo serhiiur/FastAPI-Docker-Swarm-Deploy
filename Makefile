@@ -14,6 +14,7 @@ STACK_NAME ?= fastapi-stack
 				test \
 				check \
 				pre-commit \
+				secrets \
 				stack-deploy \
 				stack-status \
 				stack-services \
@@ -32,10 +33,13 @@ clean: ## Remove Python and tool cache directories
 	find . -type f \( -name "*.pyc" -o -name "*.pyo" \) -delete
 	rm -rf .mypy_cache .ruff_cache .pytest_cache
 
-config: # Create all config files (from templates) unless they're exists
+config: ## Create all config files (from templates) unless they exists
 	cp -n ./.env.example ./.env
 	cp -n ./configs/api.env.example ./configs/api.env
 	cp -n ./configs/uvicorn.env.example ./configs/uvicorn.env
+
+secrets: ## Generate configs to store Docker Secrets with random values
+	echo $(openssl rand -base64 15) > ./secrets/db_password.txt
 
 migrations: ## Generate a new migration (usage: make migrations m="message")
 ifeq ($(m),)
