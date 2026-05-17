@@ -11,7 +11,7 @@ COPY pyproject.toml uv.lock ./
 
 RUN uv sync --no-dev --frozen --no-install-project
 
-COPY logging.config.json ./
+COPY ./configs/api.logging.config.json ./configs/
 COPY src/ ./src/
 
 
