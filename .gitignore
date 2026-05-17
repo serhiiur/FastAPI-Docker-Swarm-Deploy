@@ -6,5 +6,5 @@ __pycache__/
 *.pyc
 .env
 secrets/*.txt
-configs/api.env
+configs/*.env
 *.db
