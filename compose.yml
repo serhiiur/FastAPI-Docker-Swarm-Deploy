@@ -13,6 +13,8 @@ services:
     environment:
       - DB_NAME: ${POSTGRES_DB:-postgres}
       - DB_USER: ${POSTGRES_USER:-postgres}
+    env_file:
+      - ./configs/uvicorn.env
     deploy:
       replicas: ${WEB_REPLICAS:-2}
       restart_policy:
