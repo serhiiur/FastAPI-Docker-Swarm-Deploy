@@ -5,8 +5,7 @@ STACK_NAME ?= fastapi-stack
 .PHONY: help \
 				install \
 				clean \
-				app-config \
-				compose-config \
+				config \
 				migrations \
 				migrate \
 				run \
@@ -33,11 +32,10 @@ clean: ## Remove Python and tool cache directories
 	find . -type f \( -name "*.pyc" -o -name "*.pyo" \) -delete
 	rm -rf .mypy_cache .ruff_cache .pytest_cache
 
-app-config: ## Copy api.env.example to api.env (skips if file already exists)
-	cp ./configs/api.env.example ./configs/api.env --update=none
-
-compose-config: ## Copy .env.example to .env (skips if file already exists)
-	cp ./.env.example ./.env --update=none
+config: # Create all config files (from templates) unless they're exists
+	cp -n ./.env.example ./.env
+	cp -n ./configs/api.env.example ./configs/api.env
+	cp -n ./configs/uvicorn.env.example ./configs/uvicorn.env
 
 migrations: ## Generate a new migration (usage: make migrations m="message")
 ifeq ($(m),)
@@ -49,7 +47,7 @@ migrate: ## Apply database migrations to head
 	uv run alembic -c src/alembic/alembic.ini upgrade head
 
 run: ## Start the uvicorn development server (usage: make run RELOAD=1)
-	uv run uvicorn src.app.main:app --log-config logging.config.json $(if $(RELOAD),--reload)
+	uv run uvicorn src.app.main:app --env-file ./configs/uvicorn.env $(if $(RELOAD),--reload)
 
 lint: ## Run Ruff linter
 	uv run ruff check
