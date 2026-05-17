@@ -46,32 +46,32 @@ For demonstration purposes we're going to provision virtual machines using [Lima
 ```bash
 .
 ├── assets
-│   └── images              # Project images and diagrams for documentation
+│   └── images                  # Project images and diagrams for documentation
 ├── configs
-│   ├── api.env             # Docker Config providing application configuration
+│   ├── api.env                 # Docker Config providing application configuration
+│   ├── api.logging.config.json # Logging configuration file for the API
 ├── secrets
-│   ├── db_password.txt     # Docker Secret to store the database password
+│   ├── db_password.txt         # Docker Secret to store the database password
 ├── src
-│   ├── alembic             # Configuration for Alembic. Database migrations and files
+│   ├── alembic                 # Configuration for Alembic. Database migrations and files
 │   │   ├── ...
 │   ├── app
-│   │   ├── main.py         # Main FastAPI application entrypoint
-│   │   ├── core            # Core application providing shared resources such as settings, schemas, models etc.
+│   │   ├── main.py             # Main FastAPI application entrypoint
+│   │   ├── core                # Core application providing shared resources such as settings, schemas, models etc.
 │   │   │   ├── ...
-│   │   └── users           # Application to manage users on the API level
+│   │   └── users               # Application to manage users on the API level
 │   │       ├── ...
-│   └── tests               # Project tests
+│   └── tests                   # Project tests
 │       ├── ...
-├── compose.yml             # Compose file to deploy the application to Docker Swarm cluster
-├── logging.config.json     # Logging configuration for the API
-├── lima.sh                 # Custom script to provision virtual machine for Docker Swarm deployment
-├── Dockerfile              # Project Docker image builder
-├── Makefile                # Project Management commands
-├── .env                    # File to dynamically configure compose services
-├── .pre-commit-config.yaml # Pre commit hooks
-├── pyproject.toml          # Project configuration and dependencies management
-└── uv.lock                 # Locked project management file
-├── README.md               # Project documentation
+├── compose.yml                 # Compose file to deploy the application to Docker Swarm cluster
+├── lima.sh                     # Custom script to provision virtual machine for Docker Swarm deployment
+├── Dockerfile                  # Project Docker image builder
+├── Makefile                    # Project Management commands
+├── .env                        # File to dynamically configure compose services
+├── .pre-commit-config.yaml     # Pre commit hooks
+├── pyproject.toml              # Project configuration and dependencies management
+└── uv.lock                     # Locked project management file
+├── README.md                   # Project documentation
 ```
 
 
@@ -144,40 +144,38 @@ docker node update --label-add type=fastapi-stack --label-add tag=cache   lima-c
 
 ## Configuration
 
-Configuration of the entire stack relies on:
+Configuration of the entire stack is based on:
   - environment variables - for configuring Docker Swarm services;
   - Docker [Secrets](https://docs.docker.com/engine/swarm/secrets/) - for managing sensitive information such as passwords;
   - Docker [Configs](https://docs.docker.com/engine/swarm/configs/) - for managing regular configuration of the application.
 
-**Step 1**: configure Docker Swarm services ([compose.yml](compose.yml)) via <ins>.env</ins> file. Run the following command to generate one:
+There are 4 regular configuration files:
+
+  - <ins>.env</ins> - environment-based config for [compose.yml](compose.yml) services;
+  - <ins>configs/api.env</ins> - environment-based config for the web application;
+  - <ins>configs/uvicorn.env</ins> - environment-based config for Uvicorn (runs the web application);
+  - <ins>configs/api.logging.config.json</ins> - JSON-based logging config for the web application.
+
+And 1 config to store sensitive secret information:
+  - <ins>secrets/db_password.txt</ins>
+
+
+Run the following command to generate regular configuration files from their corresponding templates:
 ```bash
-make compose-config
+make config
 ```
 
-It will generate the <ins>.env</ins> file in the root project directory. Adjust the parameters to your environment or project requirements.
+**Note**: `make config` command doesn't override the configuration files if any already exists.
 
-**Step 2**: set *Secrets* for storing sensitive information inside Docker Swarm services.
 
-According to the [Secrets](https://docs.docker.com/engine/swarm/secrets/) management in Docker, each parameter should be stored in a separate file inside [./secrets/](./secrets/) directory, and then referenced in the [compose.yml](compose.yml) file. There's only only **Secret** in the entire stack that stores the database password.
-
-It can be created like this:
+Run the following command to generate configs to store sensitive secret information:
 ```bash
-echo "postgres" > ./secrets/db_password.txt
+make secrets
 ```
 
-**Note**: it's recommended to create the <ins>./secrets/db_password.txt</ins> file and set the password manually.
+**Note**: `make secrets` command overwrites files with new values.
 
-
-**Step 3**: set **Config** for storing regular configuration of the web application. 
-
-Similarly to [Secrets](https://docs.docker.com/engine/swarm/secrets/), [Configs](https://docs.docker.com/engine/swarm/secrets/) should be stored in a separate file inside [./configs/](./configs/) directory. There's an application config template you can you to configure the application. Use the command below to generate the application configuration file:
-```bash
-make app-config
-```
-
-It will generate <ins>./configs/api.env</ins> file. Adjust the parameters to your own requirements or leave the default values.
-
-Once all the configuration is set, the stack is ready to be deployed.
+Once all the configuration files are set, deploy the stack.
 
 
 ## Deployment
@@ -272,5 +270,6 @@ make clean
 
 ## References
 - [FastAPI](https://github.com/fastapi/fastapi)
+- [Uvicorn Settings](https://uvicorn.dev/settings/#configuration-methods)
 - [Lima](https://github.com/lima-vm/lima)
 - [Docker Swarm Mode](https://docs.docker.com/engine/swarm/)
