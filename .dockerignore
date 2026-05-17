@@ -8,6 +8,7 @@ __pycache__/
 .env
 secrets/*.txt
 configs/*.env
+!configs/logging.config.json
 assets/
 *.db
 Makefile
